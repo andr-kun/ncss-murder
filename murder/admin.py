@@ -129,6 +129,7 @@ def admin_only(handler):
 	return admin_handler
 
 def is_disabled(disable):
+	print("IS_DISABLED", disable)
 	if str(disable).lower() in ['true', '1']:
 		disabled = True
 	elif str(disable).lower() in ['false', '0']:
@@ -140,6 +141,7 @@ def is_disabled(disable):
 	
 @admin_only
 def disable(response):
+	print(response)
 	game_id = response.get_field('game')
 	disable = response.get_field('disable')
 

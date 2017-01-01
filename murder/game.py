@@ -18,7 +18,7 @@ class Game(Model):
 		else:
 			values = []
 
-		latest += """ ORDER BY year, number DESC LIMIT 1""" 
+		latest += """ ORDER BY year DESC, number DESC LIMIT 1"""
 		
 		result = cls._sql(latest, values).fetchone()
 		return result if result != None else None
@@ -36,7 +36,7 @@ class Game(Model):
 		cls._sql(CREATE)
 
 def game(response):
-	latest = Game.latest() 
+	latest = Game.latest()
 	if latest != None:
 		latest_id, latest_year, latest_number = latest
 	else:

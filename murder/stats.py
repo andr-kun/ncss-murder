@@ -3,6 +3,7 @@ from collections import Counter
 from .template import templater, inside_page
 from .player import Player
 from .murder import Murder
+from .game import Game
 
 def stats_template(game_id, players, murders, **kwargs) -> str:
 	stats = templater.load('stats.html').generate(game_id=game_id, murders=murders, players=players, **kwargs)
@@ -29,3 +30,12 @@ def most_wanted(murders):
 		most_wanted = None
 
 	return most_wanted
+
+def simple_stats(response):
+	latest_game_id = Game.latest()[0]
+
+	players = list(Player.iter(game=latest_game_id))
+	murders = list(Murder.iter(game=latest_game_id))
+
+	response.set_header('Content-Type', 'text/plain')
+	response.write("%d\n%d\n" % (len(players) - len(murders),  len(murders)))

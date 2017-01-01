@@ -7,7 +7,7 @@ from .game import game, Game
 from .player import player, profiles, profile, Player
 from .location import Location
 from .murder import murder, murder_submit, murder_delete, lodge, murder_list, murder_map, Murder
-from .stats import stats
+from .stats import stats, simple_stats
 from .admin import admin, signup_page, signup, login_page, login, disable, Admin 
 from .achievement import achievements, achievements_stat, achievement_progress, Achievement, AchievementProgress
 
@@ -40,6 +40,7 @@ def init_server(**kwargs):
 	server.register('/signup', signup_page, post=signup)
 	server.register('/login', login_page, post=login)
 	server.register('/disable', disable, post=disable)
+	server.register('/simple_stats', simple_stats)
 
 	# HTML pages
 	game_id = '/([0-9a-zA-Z-]+)'
