@@ -3,6 +3,10 @@ import sys
 import getopt
 from murder import init_db, init_server
 
+import logging
+ncssbook_log = logging.getLogger('ncssbook')
+ncssbook_log.setLevel(10)
+
 # Get command line arguments
 optlist, args = getopt.getopt(sys.argv[1:], 'p', ['port='])
 opts = {key.lstrip('-'): value for (key, value) in optlist}

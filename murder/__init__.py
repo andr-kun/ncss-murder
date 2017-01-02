@@ -6,7 +6,7 @@ from .home import home
 from .game import game, Game
 from .player import player, profiles, profile, Player
 from .location import Location
-from .murder import murder, murder_submit, murder_delete, lodge, murder_list, murder_map, Murder
+from .murder import murder, murder_submit, murder_delete, lodge, murder_list, murder_map, Murder, log_kill_redirect, log_kill
 from .stats import stats, simple_stats
 from .admin import admin, signup_page, signup, login_page, login, disable, Admin 
 from .achievement import achievements, achievements_stat, achievement_progress, Achievement, AchievementProgress
@@ -42,10 +42,15 @@ def init_server(**kwargs):
 	server.register('/disable', disable, post=disable)
 	server.register('/simple_stats', simple_stats)
 
+
 	# HTML pages
 	game_id = '/([0-9a-zA-Z-]+)'
 	player_id = '([^\s]+)'
+	player_code = '([0-9a-zA-Z]+)'
 	server.register('/admin/?', admin)
+	server.register("/k", log_kill_redirect)
+	server.register("/k/{}?".format(player_code), log_kill_redirect)
+
 	server.register('{}/admin/?'.format(game_id), admin)
 	server.register('{}/admin/lodge/?'.format(game_id), lodge)
 	server.register('{}/profiles/?'.format(game_id), profiles)
@@ -55,6 +60,8 @@ def init_server(**kwargs):
 	server.register('{}/stats/?'.format(game_id), stats)
 	server.register('{}/achievements/?'.format(game_id), achievements)
 	server.register('{}/achievements_stat/([0-9]+)'.format(game_id), achievements_stat)
+	server.register('{}/kill/?(?:/{})?/?'.format(game_id, player_code), log_kill, post=log_kill)
 	server.register('{}?/?'.format(game_id), home)
+
 
 	return server

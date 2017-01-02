@@ -5,6 +5,7 @@ from .admin import disableable, admin_only
 from .player import Player
 from .location import Location
 from .template import templater, inside_page
+from .game import Game
 
 class Murder(Model):
 	_table='murder'
@@ -152,3 +153,55 @@ def murder_delete(response):
 
 	from .achievement import Achievement
 	Achievement.total_progress(game_id)
+
+def log_kill_redirect(response, kill_code=None):
+	latest = Game.latest()
+
+	if latest != None:
+		latest_id, year, number = latest
+		response.redirect('/{}/kill/{}'.format(str(latest_id), kill_code if kill_code else ""))
+	else:
+		response.redirect('/login')
+
+def log_kill_template(game_id, players=None, kill_code=None, locations=None, error_message=None) -> str:
+	log_kill_page = templater.load('log_kill.html').generate(game_id=game_id, players=players, kill_code=kill_code, locations=locations, error_message=error_message)
+	return inside_page(log_kill_page, game_id=game_id)
+
+def log_kill(response, game_id=None, kill_code=None):
+	error_message = None
+	if response.request.method == "POST":
+		murderer = response.get_field('murderer')
+		killcode = response.get_field('killcode')
+		datetime = response.get_field('datetime')
+		location = response.get_field('location')
+
+		location_name = response.get_field('location_name')
+		if location_name:
+			lat = response.get_field('lat')
+			lng = response.get_field('lng')
+			loc = Location.add(id=None, name=location_name, lat=lat, lng=lng)
+			location = loc.id
+
+		victim = Player.find(code=killcode)
+		print(victim)
+		if victim is None:
+			error_message = "Invalid kill code!"
+			kill_code = None
+		elif Player.is_dead(victim.id):
+			error_message = "You can't kill an already dead person!"
+			kill_code = None
+		elif not datetime.startswith("2017-01-"):
+			error_message = "Invalid date!"
+			kill_code = killcode
+		else:
+			Murder.add(game=game_id, murderer=murderer, victim=victim.id, datetime=datetime, location=location)
+
+			from .achievement import Achievement
+			Achievement.selected_progress(game_id, murderer)
+			Achievement.selected_progress(game_id, victim.id)
+
+			response.redirect('/{}/murders'.format(game_id))
+
+	players = Player.list(game_id)
+	locations = list(Location.iter())
+	response.write(log_kill_template(game_id, players, kill_code, locations, error_message))

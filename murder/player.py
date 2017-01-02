@@ -4,9 +4,9 @@ from .template import templater, inside_page
 class Player(Model):
 	_table = 'player'
 
-	def __init__(self, id, game, name, type):
+	def __init__(self, id, game, name, type, code):
 		super(Player, self).__init__()
-		self.id, self.game, self.name, self.type = id, game, name, type
+		self.id, self.game, self.name, self.type, self.code = id, game, name, type, code
 	
 	@classmethod
 	def select(cls, order='name', **kwargs):
@@ -81,6 +81,7 @@ class Player(Model):
 			game INTEGER NOT NULL references game (id),
 			name STRING NOT NULL,
 			type STRING NOT NULL,
+			code STRING NOT NULL,
 			UNIQUE (game, name)
 		)"""
 		cls._sql(CREATE)

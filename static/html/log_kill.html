@@ -1,0 +1,74 @@
+<article>
+	<h2>Lodge a murder</h2>
+
+    {% if error_message %}
+		<p>{{error_message}}</p>
+	{% end %}
+
+	<form method="POST" action="/{{ game_id }}/kill" onsubmit="localiseDate(this)">
+		<input type="hidden" name="game" value="{{ game_id }}"></input>
+
+		<fieldset>
+			<p>
+                <label for="killcode">Kill code</label>
+			    <input id="killcode" name="killcode" value="{% if kill_code %}{{ kill_code }}{% end %}"></input>
+			</p>
+			<p>
+				<label for="sel_murderer">Murderer</label>
+				<select id="sel_murderer" name="murderer" required>
+					<option></option>
+				{% for player in players %}
+					<option value="{{ player['id'] }}">
+						{{ escape(player['name']) }}
+					</option>
+				{% end %}
+				</select>
+			</p>
+			<p>
+				Continue below or
+				<input type="submit" value="Lodge Murder"></input>
+			</p>
+		</fieldset>
+		<fieldset>
+			<p>
+				<label for="datetime">Datetime</label>
+				<input type="datetime-local" name="datetimeLocal"></input>
+				<input type="hidden" name="datetime"></input>
+			</p>
+		</fieldset>
+		<fieldset>
+			<p>
+				<label for="location">Location</label>
+				<select name="location">
+					<option disabled selected value="">Select a location</option>
+				{% for location in locations %}
+					<option value="{{ location.id }}">{{ location.name }}</option>
+				{% end %}
+				</select>
+			</p>
+		</fieldset>
+
+		<fieldset>
+			Add a new location below or
+			<input type="submit" value="Lodge Murder"></input>
+		</fieldset>
+
+		{% include add_location.html %}
+
+		<fieldset>
+			<input type="submit" value="Lodge Murder"></input>
+		</fieldset>
+	</form>
+
+  <script src="/static/js/lodgeMurder.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.8.4/moment.js"></script>
+	<script>
+		var datetime = document.querySelector('input[type=datetime-local]');
+		if (datetime.value === '')
+			datetime.value = moment().format('YYYY-MM-DDTHH:mm');
+
+		function localiseDate(form) {
+			form.datetime.value = form.datetimeLocal.value + moment().format('ZZ');
+		}
+	</script>
+</article>
