@@ -44,8 +44,8 @@
 		var svg = d3.select('svg#murder-tree');
 
 		var m = [20, 120, 20, 120],
-			w = svg.node().offsetWidth - m[1] - m[3],
-			h = svg.node().offsetHeight - m[0] - m[2],
+			w = svg.node().getBBox().width - m[1] - m[3],
+			h = svg.node().getBBox().height - m[0] - m[2],
 			i = 0,
 			root;
 
@@ -114,7 +114,7 @@
 
 			root = murderTree;
 			root.x0 = h / 2;
-			root.y0 = 0;
+			root.y0 = w / 2;
 
 			function toggleAll(d) {
 				if (d.children) {

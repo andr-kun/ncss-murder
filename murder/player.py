@@ -38,6 +38,13 @@ class Player(Model):
 		from .murder import Murder
 		return Murder.find(victim=id) is not None
 
+	@classmethod
+	def count(cls, game):
+		query = """SELECT COUNT(*) FROM {} WHERE game = ?""".format(cls._table, )
+		values = [game]
+		result = cls._sql(query, values).fetchone()[0]
+		return result
+
 	def murders(self):
 		from .murder import Murder
 		murders = list(Murder.all_murders(murderer=self.id))
@@ -78,6 +85,12 @@ class Player(Model):
 		)"""
 		cls._sql(CREATE)
 
+	def __str__(self):
+		return self.__repr__()
+
+	def __repr__(self):
+		return str((self.id, self.game, self.name, self.type))
+
 def profiles_template(game_id, players) -> str:
 	profiles = templater.load('profiles.html').generate(game_id=game_id, profiles=players)
 	return inside_page(profiles, game_id=game_id)
@@ -100,6 +113,8 @@ def profiles(response, game_id=None):
 @disableable
 def profile(response, game_id=None, player_id=None):
 	player = Player.find(game=game_id, name=player_id.replace('+', ' '))
+	if player == None:
+		response.redirect('/{}/profiles'.format(game_id))
 	death = player.death()
 	murders = player.murders()
 	achievements = player.achievements()

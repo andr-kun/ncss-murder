@@ -20,7 +20,7 @@ def time_unit(amount, unit):
 	elif unit == 'days' or unit == 'day':
 		return ('days', amount)
 	else:
-		raise InputError('{!r} is not a valid unit'.format(unit))
+		raise ValueError('{!r} is not a valid unit'.format(unit))
 
 from itertools import takewhile
 
@@ -33,6 +33,9 @@ class Achievement(Model):
 		self.id, self.name, self.description, self.points, self.goal, self.unit = id, name, description, points, goal, unit
 
 	def calculate_progress(self, game):
+		pass
+
+	def calculate_selected_progress(self, game, player_id):
 		pass
 
 	def holders(self):
@@ -61,6 +64,11 @@ class Achievement(Model):
 	def total_progress(cls, game):
 		for achievement in Achievement.achievements:
 			achievement.calculate_progress(game)
+
+	@classmethod
+	def selected_progress(cls, game, player):
+		for achievement in Achievement.achievements:
+			achievement.calculate_selected_progress(game, player)
 
 	@classmethod
 	def init_db(cls):
@@ -98,6 +106,19 @@ class MurderAchievement(Achievement):
 				AchievementProgress.add(achievement=self.id, player=player.id, progress=progress, completed=int(progress >= self.goal))
 			else:
 				progress_record.update(progress=progress, completed=int(progress >= self.goal))
+
+	def calculate_selected_progress(self, game, player_id):
+		player = Player.get(game=game, id=player_id)
+		murders = list(Murder.all_murders(game=game, murderer=player_id))
+		player_murders = [murder for murder in murders if self.condition(murder)]
+
+		progress = min(len(player_murders), self.goal)
+
+		progress_record = AchievementProgress.find(achievement=self.id,player=player.id)
+		if progress_record == None:
+			AchievementProgress.add(achievement=self.id, player=player.id, progress=progress, completed=int(progress >= self.goal))
+		else:
+			progress_record.update(progress=progress, completed=int(progress >= self.goal))
 		
 	def condition(self, murder):
 		return True
@@ -158,6 +179,29 @@ class ConsecutiveMurderAchievement(Achievement):
 			else:
 				progress_record.update(progress=progress, completed=int(progress >= self.goal))
 
+	def calculate_selected_progress(self, game, player_id):
+		player = Player.get(game=game, id=player_id)
+		player_murders = list(Murder.iter(game=game, murderer=player_id))
+		player_murders.sort(key=lambda m: m.datetime)
+		for murder in player_murders:
+			murder.datetime = strptime(murder.datetime)
+
+		if player_murders:
+			# For each murder check if the next n murders
+			# are within the time limit for the n consecutive murders
+			is_consecutive = lambda a: lambda b: abs(a.datetime - b.datetime) < self.within
+			progress = min(max([len(list(takewhile(is_consecutive(player_murders[m]), player_murders[m:])))
+								for m, murder in enumerate(player_murders)]), self.goal)
+		else:
+			progress = 0
+
+		progress_record = AchievementProgress.find(achievement=self.id, player=player.id)
+		if progress_record == None:
+			AchievementProgress.add(achievement=self.id, player=player.id, progress=progress,
+									completed=int(progress >= self.goal))
+		else:
+			progress_record.update(progress=progress, completed=int(progress >= self.goal))
+
 class DeathAchievement(Achievement):
 	def __init__(self, id, name, description, points, goal=None, unit='murders'):
 		super(DeathAchievement, self).__init__(id, name, description, points, goal, unit)
@@ -174,6 +218,18 @@ class DeathAchievement(Achievement):
 				AchievementProgress.add(achievement=self.id, player=player.id, progress=1 if death else 0, completed=1 if death else 0)
 			else:
 				progress_record.update(progress=1 if death else 0, completed=1 if death else 0)
+
+	def calculate_selected_progress(self, game, player_id):
+		player = Player.get(game=game, id=player_id)
+		murders = list(Murder.iter(game=game, victim=player_id))
+
+		death = any([murder for murder in murders if self.condition(murder)])
+
+		progress_record = AchievementProgress.find(achievement=self.id,player=player.id)
+		if progress_record == None:
+			AchievementProgress.add(achievement=self.id, player=player.id, progress=1 if death else 0, completed=1 if death else 0)
+		else:
+			progress_record.update(progress=1 if death else 0, completed=1 if death else 0)
 		
 	def condition(self, death):
 		return True
@@ -219,6 +275,37 @@ class TimeLastedAchievement(Achievement):
 				AchievementProgress.add(achievement=self.id, player=player.id, progress=progress, completed=completed)
 			else:
 				progress_record.update(progress=progress, completed=completed)
+
+	def calculate_selected_progress(self, game, player_id):
+		unit, goal = time_unit(self.goal, self.unit)
+
+		player = Player.get(game=game, id=player_id)
+		death = list(Murder.iter(game=game, victim=player_id))
+		first_kill = Murder.first_kill(game=game)
+
+		now = dt.now()
+		start_time = strptime(first_kill.datetime) if death else now
+		goal_time = start_time + timedelta(**{unit: goal})
+		now = dt.now(start_time.tzinfo)
+
+		if death:
+			death_time = strptime(death[0].datetime)
+			dead_before_goal = death_time < goal_time
+		else:
+			dead_before_goal = False
+
+		completed = 1 if (not dead_before_goal) and now > goal_time else 0
+		if death:
+			time_progress = getattr(death_time - start_time, unit) * (self.goal/goal)
+		else:
+			time_progress = getattr(now - start_time, unit) * (self.goal/goal)
+		progress = max(0, min(self.goal, time_progress))
+
+		progress_record = AchievementProgress.find(achievement=self.id, player=player.id)
+		if progress_record == None:
+			AchievementProgress.add(achievement=self.id, player=player.id, progress=progress, completed=completed)
+		else:
+			progress_record.update(progress=progress, completed=completed)
 
 Achievement.achievements = [
 	MurderAchievement(None, '1 kill', 'Get your first kill', 5, 1),

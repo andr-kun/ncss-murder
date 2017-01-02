@@ -27,8 +27,11 @@ class Murder(Model):
 			LEFT JOIN location
 				ON murder.location = location.id
 		"""
-		
-		if game != None:
+
+		if game != None and murderer != None:
+			MURDERS += "WHERE murder.game = ? AND murder.murderer = ?"
+			c = cls._sql(MURDERS, (game, murderer,))
+		elif game != None:
 			MURDERS += "WHERE murder.game = ?"
 			c = cls._sql(MURDERS, (game,))
 		elif murderer != None:
@@ -43,6 +46,23 @@ class Murder(Model):
 			row = c.fetchone()
 
 	@classmethod
+	def count(cls, game):
+		query = """SELECT COUNT(*) FROM {} WHERE game = ?""".format(cls._table, )
+		values = [game]
+		result = cls._sql(query, values).fetchone()[0]
+		return result
+
+	@classmethod
+	def first_kill(cls, game):
+		query = """select * from murder where game = ? LIMIT 1""".format(cls._table, )
+		values = [game]
+		result = cls._sql(query, values).fetchone()
+
+		if result is not None:
+			return cls(*result)
+		return result
+
+	@classmethod
 	def init_db(cls):
 		CREATE = """CREATE table murder (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -54,6 +74,12 @@ class Murder(Model):
 			UNIQUE (murderer, victim)
 		)"""
 		cls._sql(CREATE)
+
+	def __str__(self):
+		return self.__repr__()
+
+	def __repr__(self):
+		return str((self.id, self.game, self.murderer, self.victim, self.datetime, self.location, self.lat, self.lng))
 
 def lodge_template(game_id, players, locations) -> str:
 	lodge = templater.load('lodge_murder.html').generate(game_id=game_id, players=players, locations=locations)
@@ -83,7 +109,6 @@ def murder_map(response, game_id=None):
 	murders = list(Murder.all_murders(game_id))
 	response.write(murder_map_template(game_id, murders))
 
-@admin_only
 def murder(response):
 	game_id = response.get_field('game')
 	types = response.request.headers['Accept'].split(';')
@@ -111,7 +136,9 @@ def murder_submit(response):
 	Murder.add(game=game_id, murderer=murderer, victim=victim, datetime=datetime, location=location)
 
 	from .achievement import Achievement
-	Achievement.total_progress(game_id)
+	#Achievement.total_progress(game_id)
+	Achievement.selected_progress(game_id, murderer)
+	Achievement.selected_progress(game_id, victim)
 
 	response.redirect('/{}/murders'.format(game_id))
 

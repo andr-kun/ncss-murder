@@ -34,8 +34,8 @@ def most_wanted(murders):
 def simple_stats(response):
 	latest_game_id = Game.latest()[0]
 
-	players = list(Player.iter(game=latest_game_id))
-	murders = list(Murder.iter(game=latest_game_id))
+	player_count = Player.count(game=latest_game_id)
+	murder_count = Murder.count(game=latest_game_id)
 
 	response.set_header('Content-Type', 'text/plain')
-	response.write("%d\n%d\n" % (len(players) - len(murders),  len(murders)))
+	response.write("%d\n%d\n" % (player_count-murder_count, murder_count))
