@@ -301,6 +301,9 @@ class TimeLastedAchievement(Achievement):
 			time_progress = getattr(now - start_time, unit) * (self.goal/goal)
 		progress = max(0, min(self.goal, time_progress))
 
+		if completed == 1 and progress < 1:
+			progress = 1
+
 		progress_record = AchievementProgress.find(achievement=self.id, player=player.id)
 		if progress_record == None:
 			AchievementProgress.add(achievement=self.id, player=player.id, progress=progress, completed=completed)
