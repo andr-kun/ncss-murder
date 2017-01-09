@@ -14,7 +14,7 @@
 			    <input id="killcode" name="killcode" value="{% if kill_code %}{{ kill_code }}{% end %}"></input>
 			</p>
 			<p>
-				<label for="sel_murderer">Murderer</label>
+				<label for="sel_murderer">Murderer (your name)</label>
 				<select id="sel_murderer" name="murderer" required>
 					<option></option>
 				{% for player in players %}
@@ -23,10 +23,6 @@
 					</option>
 				{% end %}
 				</select>
-			</p>
-			<p>
-				Continue below or
-				<input type="submit" value="Lodge Murder"></input>
 			</p>
 		</fieldset>
 		<fieldset>
@@ -44,20 +40,19 @@
 				{% for location in locations %}
 					<option value="{{ location.id }}">{{ location.name }}</option>
 				{% end %}
+					<option value="other">Other...</option>
 				</select>
 			</p>
 		</fieldset>
 
-		<fieldset>
-			Add a new location below or
-			<input type="submit" value="Lodge Murder"></input>
-		</fieldset>
+		<div id="add_location" style="display: none">
+			{% include add_location.html %}
+		</div>
 
-		{% include add_location.html %}
+			<fieldset>
+				<input type="submit" value="Lodge Murder"></input>
+			</fieldset>
 
-		<fieldset>
-			<input type="submit" value="Lodge Murder"></input>
-		</fieldset>
 	</form>
 
   <script src="/static/js/lodgeMurder.js"></script>
@@ -70,5 +65,17 @@
 		function localiseDate(form) {
 			form.datetime.value = form.datetimeLocal.value + moment().format('ZZ');
 		}
+
+		 var location_selection = document.getElementsByName("location")[0];
+		 location_selection.onchange = function(){
+		 	selected_location = location_selection.value;
+		 	console.log(selected_location);
+		 	if (selected_location === 'other'){
+		 		document.getElementById('add_location').style.display = '';
+		 	} else {
+		 		document.getElementById('add_location').style.display = 'none';
+		 	}
+		 };
+
 	</script>
 </article>
