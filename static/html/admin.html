@@ -1,4 +1,10 @@
 {% if game_id %}
+	{% if error %}
+	<article>
+		<h2>Error</h2>
+		<p>{{ error }}</p>
+	</article>
+	{% end %}
 	{% if players %}
 		{% include 'lodge_murder.html' %}
 	{% end %}

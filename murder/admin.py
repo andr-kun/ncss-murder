@@ -1,7 +1,7 @@
 from hashlib import sha256
 from tornado.web import HTTPError
 
-from .db import Model, DoesNotExistError
+from .db import Model, DoesNotExistError, NonUniqueError
 from .game import Game
 from .player import Player
 from .location import Location
@@ -47,8 +47,8 @@ class Admin(Model):
 		)""".format(cls._table)
 		cls._sql(CREATE)
 
-def admin_template(game_id, game=None, players=None, locations=None) -> str:
-	admin = templater.load('admin.html').generate(game_id=game_id, game=game, players=players, locations=locations)
+def admin_template(game_id, game=None, players=None, locations=None, error=None) -> str:
+	admin = templater.load('admin.html').generate(game_id=game_id, game=game, players=players, locations=locations, error=error)
 	return inside_page(admin, game_id=game_id)
 
 def admin(response, game_id=None):
@@ -62,9 +62,16 @@ def admin(response, game_id=None):
 			game.disabled = is_disabled(game.disabled)
 		except DoesNotExistError:
 			game = None
-		players = Player.list(game_id)
+
+		error = None
+		try:
+			players = Player.list(game_id)
+		except NonUniqueError as err:
+			players = None
+			error = "Multiple death detected! Error message: " + str(err)
+
 		locations = list(Location.iter())
-		response.write(admin_template(game_id, game, players, locations))
+		response.write(admin_template(game_id, game, players, locations, error))
 	else:
 		response.redirect('/login?game={}'.format(game_id) if game_id != None else '/login')
 

@@ -21,15 +21,18 @@ class Player(Model):
 		return cls._sql(query, values)
 
 	@classmethod
-	def list(cls, game):
+	def list(cls, game, death=True):
 		def convert(row):
 			id = row[0]
-			return {
+			output = {
 				'id': id,
 				'name': row[2],
-				'type': row[3],
-				'death': Player.is_dead(id),
+				'type': row[3]
 			}
+			if death:
+				output['death'] = Player.is_dead(id)
+			return output
+
 		player_query = Player.select(order='id', game=game)
 		return [convert(player) for player in player_query]
 

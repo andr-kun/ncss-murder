@@ -176,22 +176,29 @@ def log_kill(response, game_id=None, kill_code=None):
 		location = response.get_field('location')
 
 		location_name = response.get_field('location_name')
-		if location_name:
+		if location_name and (location is None or location == 'other'):
 			lat = response.get_field('lat')
 			lng = response.get_field('lng')
 			loc = Location.add(id=None, name=location_name, lat=lat, lng=lng)
 			location = loc.id
 
 		victim = Player.find(code=killcode)
-		print(victim)
 		if victim is None:
 			error_message = "Invalid kill code!"
 			kill_code = None
 		elif Player.is_dead(victim.id):
 			error_message = "You can't kill an already dead person!"
 			kill_code = None
+		elif int(murderer) == victim.id:
+			error_message = "You can't kill yourself!"
 		elif not datetime.startswith("2017-01-"):
 			error_message = "Invalid date!"
+			kill_code = killcode
+		elif location is None and location_name == "":
+			error_message = "You need to specify kill location!"
+			kill_code = killcode
+		elif murderer is None:
+			error_message = "Invalid killer!"
 			kill_code = killcode
 		else:
 			Murder.add(game=game_id, murderer=murderer, victim=victim.id, datetime=datetime, location=location)
@@ -202,6 +209,6 @@ def log_kill(response, game_id=None, kill_code=None):
 
 			response.redirect('/{}/murders'.format(game_id))
 
-	players = Player.list(game_id)
+	players = Player.list(game_id, death=False)
 	locations = list(Location.iter())
 	response.write(log_kill_template(game_id, players, kill_code, locations, error_message))
