@@ -45,7 +45,7 @@ def init_server(**kwargs):
 
 	# HTML pages
 	game_id = '/([0-9a-zA-Z-]+)'
-	player_id = '([^\s]+)'
+	player_id = '([\w\W+-]+)'
 	player_code = '([0-9a-zA-Z]+)'
 	server.register('/admin/?', admin)
 	server.register("/k", log_kill_redirect)
